@@ -1183,7 +1183,7 @@ function renderInsights(){
 
 function registerServiceWorker(){
   if(!("serviceWorker" in navigator)) return;
-  const register = () => navigator.serviceWorker.register("./frontend/service-worker.js").catch(e=>console.error("SW erro:",e));
+  const register = () => navigator.serviceWorker.register("./service-worker.js").catch(e=>console.error("SW erro:",e));
   if (document.readyState === "complete") register();
   else window.addEventListener("load", register);
 }
