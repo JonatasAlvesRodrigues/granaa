@@ -1,4 +1,4 @@
-﻿﻿<!doctype html>
+﻿﻿﻿<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#0f766e" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <link rel="manifest" href="./frontend/manifest.webmanifest" />
-    <link rel="icon" type="image/png" href="./frontend/logo-granaflow.png" />
-    <link rel="apple-touch-icon" href="./frontend/logo-granaflow.png" />
+    <link rel="manifest" href="frontend/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="frontend/logo-granaflow.png" />
+    <link rel="apple-touch-icon" href="frontend/logo-granaflow.png" />
     <title>GranaFlow | Controle Financeiro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,7 +16,14 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./frontend/styles.css" />
+    <link rel="stylesheet" href="frontend/styles.css" />
+    <style>
+      /* Fallback para garantir que o site não pareça totalmente quebrado se o CSS externo falhar */
+      body.dark { background-color: #0f1115; color: #f8fafc; }
+      .loading-overlay { position: fixed; inset: 0; background: #0f1115; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+      .spinner { width: 40px; height: 40px; border: 3px solid rgba(16, 185, 129, 0.1); border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -29,7 +36,7 @@
     <main id="authScreen" class="auth-screen">
       <article class="auth-card card">
         <div class="brand">
-          <img class="brand-logo" src="./frontend/logo-granaflow.png" alt="Logo GranaFlow" />
+          <img class="brand-logo" src="frontend/logo-granaflow.png" alt="Logo GranaFlow" />
           <div>
             <h1>GranaFlow</h1>
             <p>Controle financeiro pessoal inteligente</p>
@@ -88,7 +95,7 @@
         </form>
 
         <p id="authMessage" class="message"></p>
-      </section>
+      </article>
     </main>
 
     <div id="appScreen" class="app hidden">
@@ -491,6 +498,6 @@
       </button>
     </div>
 
-    <script src="./frontend/app.js"></script>
+    <script src="frontend/app.js"></script>
   </body>
 </html>
