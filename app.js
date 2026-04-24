@@ -1138,9 +1138,17 @@ async function initApp(){
         state.user = null;
         state.data = null;
         renderAuth();
-        setLoadingUI(false);
+        setLoadingUI(false); // Libera a tela se não houver usuário
       }
     });
+
+    // Timeout de segurança: Se em 5 segundos nada acontecer, tenta liberar o carregamento
+    setTimeout(() => {
+      if (document.body.classList.contains("loading-ui") && !state.user) {
+        console.warn("App: Carregamento forçado via timeout.");
+        setLoadingUI(false);
+      }
+    }, 5000);
 
     if(window.lucide) lucide.createIcons();
     registerServiceWorker();
