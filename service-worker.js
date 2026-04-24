@@ -10,7 +10,12 @@ const APP_SHELL = [
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(cache => {
+      // Usar map para tentar adicionar cada arquivo individualmente e não travar tudo se um falhar
+      return Promise.allSettled(
+        APP_SHELL.map(url => cache.add(url).catch(err => console.warn(`Falha ao cachear: ${url}`, err)))
+      );
+    })
   );
   self.skipWaiting();
 });
@@ -27,6 +32,9 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
+
+  // Ignorar extensões do Chrome e outros esquemas não suportados
+  if (!request.url.startsWith('http')) return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;

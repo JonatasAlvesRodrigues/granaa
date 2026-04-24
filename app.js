@@ -164,7 +164,6 @@ function mapAuthUser(user){return {id:user.id,email:user.email,name:user.user_me
 async function fetchCloudData(userId){
   console.log("Supabase: Buscando dados...");
   try {
-    // Timeout de 3 segundos para a busca no banco
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
@@ -200,7 +199,7 @@ async function pushCloudData(){
     const { error } = await sb.from("user_finance_data").upsert(payload, { onConflict: "user_id" });
     if(error) {
       console.error("Supabase Error (Push):", error.message);
-      toast("Erro ao salvar na nuvem: " + error.message, true);
+      // toast("Erro ao salvar na nuvem: " + error.message, true); // Removido para não incomodar o usuário
     }
   } catch (e) {
     console.error("Supabase: Erro inesperado no push", e);
@@ -211,38 +210,81 @@ async function syncNow(){
   if(!state.user) return;
   toast("Sincronizando...");
   await pushCloudData();
-  toast("Sincronizado com sucesso!");
+  toast("Sincronizado!");
 }
 
+let isLoggingIn = false;
+
 async function login(user){
+  if (isLoggingIn && state.user?.id === user.id) return;
+  isLoggingIn = true;
   console.log("App: Iniciando login para", user.email);
-  state.user=user;
-  const cloud=await fetchCloudData(user.id);
-  state.data=cloud||loadData(user.id);
-  ensureSettings();
-  renderAuth();
-  await boot();
+  
+  try {
+    state.user = user;
+    renderAuth(); 
+    
+    // Tenta carregar dados da nuvem, mas não trava se falhar
+    const cloud = await fetchCloudData(user.id).catch(() => null);
+    state.data = cloud || loadData(user.id);
+    
+    ensureSettings();
+    await boot();
+  } catch (err) {
+    console.error("Erro no processo de login:", err);
+    toast("Erro ao carregar dados", true);
+  } finally {
+    isLoggingIn = false;
+    setLoadingUI(false);
+  }
 }
 
 async function logout(){
-  if(state.syncTimer) {
-    clearTimeout(state.syncTimer);
-    await pushCloudData();
+  try {
+    if(state.syncTimer) {
+      clearTimeout(state.syncTimer);
+      await pushCloudData();
+    }
+    await sb.auth.signOut();
+  } catch (e) {
+    console.error("Erro ao sair:", e);
+  } finally {
+    state.user=null;
+    state.data=null;
+    localStorage.removeItem(KEYS.lastView);
+    renderAuth();
   }
-  await sb.auth.signOut();
-  state.user=null;
-  state.data=null;
-  localStorage.removeItem(KEYS.lastView);
-  renderAuth();
 }
 
 async function handleLogin(e){
   e.preventDefault();
+  if (isLoggingIn) return;
+
   const f=new FormData(e.target);
   const email=f.get("email"), pass=f.get("password");
-  const msg=$("authMessage"); if(msg) msg.textContent="Entrando...";
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error){ if(msg) msg.textContent=error.message; return; }
+  const msg=$("authMessage"); 
+  
+  if(msg) {
+    msg.textContent="Entrando...";
+    msg.style.color = "var(--primary)";
+  }
+  
+  try {
+    const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
+    if(error){ 
+      if(msg) {
+        msg.textContent = "Email ou senha incorretos.";
+        msg.style.color = "#fb7185";
+      }
+      return; 
+    }
+    // O login será completado pelo onAuthStateChange automaticamente
+  } catch (err) {
+    if(msg) {
+      msg.textContent = "Erro de conexão.";
+      msg.style.color = "#fb7185";
+    }
+  }
 }
 
 async function handleRegister(e){
@@ -1096,7 +1138,7 @@ async function initApp(){
     window.removeCategory = removeCategory;
     window.editTransaction = editTransaction;
     window.removeTransaction = removeTransaction;
-    window.markInstallmentPaid = markInstallmentPaid;
+    // window.markInstallmentPaid = markInstallmentPaid; // Comentado pois a função não existe
     window.contributeGoal = contributeGoal;
     window.removeGoal = removeGoal;
     window.removeRecurring = removeRecurring;
@@ -1136,9 +1178,9 @@ async function initApp(){
     });
 
     // Timeout de segurança GLOBAL: Se em 4s ainda estiver carregando, libera a tela
-    setTimeout(() => {
+    const bootTimeout = setTimeout(() => {
       if (document.body.classList.contains("loading-ui")) {
-        console.warn("App: Carregamento forçado por segurança (timeout).");
+        console.log("App: Finalizando carregamento via fallback.");
         setLoadingUI(false);
       }
     }, 4000);
